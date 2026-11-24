@@ -36,7 +36,11 @@ Lo encontramos con `notebooks/exploracion.ipynb`. Entrenamiento: 6.237 filas. Te
 | Id | Columna | Qué pasa (con cifras) | Por qué importa | Fase |
 | --- | --- | --- | --- | --- |
 | P1 | `estado_operacion` | 620 filas (10 %) son anuncios retirados, que no se vendieron. El test solo tiene ventas | Su precio es lo que se pedía, no lo que se pagó | 1 · Limpieza |
-| | | | | |
+|P2 | `planta` | 231 1a y 139 de 1a planta deben ser el mismo dato | Es importante porque es el mismo nivel de planta y se deberian juntar esos valores. | Limpieza |
+| P3 | `barri` | 4 viviendas estan en zonas sin operaciones en el entrenamiento. | Importa porque no podemos clasificar la vivienda segun zona. Podriamos estimarla por cercania a una conocida segun longitud y latitud | Limpieza |
+|P4| `ascensor` | Ascensor tiene 13 formas de definir Si (1) o No (0). ['1' 'SI' 'Si' 'Sí' 'True' 'si', 's'] deberian ser 1.     ['0' 'False' 'No' 'no', 'n'] deberian ser 0 | Importa porque la pregunta si tiene o no ascensor tiene una respuesta binaria que permite filtrar. | Limpieza |
+|P5| `precio` | 22 viviendas estan por debajo de 1.000 euros que deberian ser multiplicadas por mil. | Importa porque muestra un valor de precio erroneo por un defasaje en la unidad. | Limpieza |
+|P6| `parking`| Parking tiene "Sí" o "Inlcuido" que deberia ser "Si". Y tiene "No" "<NA>" que es "No". Y una tercera opcion se mantiene que es opcional. | Importa para poder agrupar los datos de forma correcta. | Limpieza |
 
 ## 4. Estrategias y experimentos
 
