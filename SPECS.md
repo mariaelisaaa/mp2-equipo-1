@@ -1,76 +1,27 @@
 # SPECS · Tasación de viviendas para Banc Avellaner
 
-> **Qué construimos.** Lo escribe el equipo; el agente lo lee pero no lo edita.
-> Las indicaciones entre `<!-- -->` son de la plantilla: borradlas cuando escribáis cada sección.
-> Lo marcado como **ejemplo resuelto** ya está implementado y testeado: no lo borréis, ampliadlo.
+> **Qué construimos.** Lo escribe el equipo; el agente lo lee pero no lo edita. Las indicaciones entre `<!-- -->` son de la plantilla: borradlas cuando escribáis cada sección. Lo marcado como **ejemplo resuelto** ya está implementado y testeado: no lo borréis, ampliadlo.
 
 ## 1. Objetivo
 
-<!--
-Una o dos frases: para quién es el modelo y qué decisión le ayuda a tomar.
-Pista: Núria Casals no quiere "un modelo con buen R²". ¿Qué hará el banco con cada tasación?
--->
-
 ## 2. Usuarios y preguntas
 
-<!--
-- Usuario: quién usa el modelo y el cuadro de mando, cuándo y qué sabe.
-- Preguntas: las del encargo, numeradas (P1, P2…) y concretadas. Cada pantalla del cuadro
-  de mando responderá a una o más.
--->
-
 ## 3. Datos de entrada y problemas
-
-<!--
-Los problemas de calidad que encontréis con notebooks/exploracion.ipynb. Sed concretos: qué columna,
-qué valor raro, cuántas filas (en entrenamiento y en test) y por qué importa para tasar.
-Hito de la sesión 12: al menos seis problemas documentados.
-
-La última columna dice en qué fase de §4 lo tratáis:
-1 · Limpieza, 2 · Transformaciones, 3 · Variables nuevas o (ninguna), si decidís no usar la columna.
-La fila P1 es un ejemplo: dejadla y seguid con P2, P3…
--->
 
 Lo encontramos con `notebooks/exploracion.ipynb`. Entrenamiento: 6.237 filas. Test: 4.002.
 
 | Id | Columna | Qué pasa (con cifras) | Por qué importa | Fase |
 | --- | --- | --- | --- | --- |
 | P1 | `estado_operacion` | 620 filas (10 %) son anuncios retirados, que no se vendieron. El test solo tiene ventas | Su precio es lo que se pedía, no lo que se pagó | 1 · Limpieza |
-|P2 | `planta` | 231 1a y 139 de 1a planta deben ser el mismo dato | Es importante porque es el mismo nivel de planta y se deberian juntar esos valores. | Limpieza |
+| P2 | `planta` | 231 1a y 139 de 1a planta deben ser el mismo dato | Es importante porque es el mismo nivel de planta y se deberian juntar esos valores. | Limpieza |
 | P3 | `barri` | 4 viviendas estan en zonas sin operaciones en el entrenamiento. | Importa porque no podemos clasificar la vivienda segun zona. Podriamos estimarla por cercania a una conocida segun longitud y latitud | Limpieza |
-|P4| `ascensor` | Ascensor tiene 13 formas de definir Si (1) o No (0). ['1' 'SI' 'Si' 'Sí' 'True' 'si', 's'] deberian ser 1.     ['0' 'False' 'No' 'no', 'n'] deberian ser 0 | Importa porque la pregunta si tiene o no ascensor tiene una respuesta binaria que permite filtrar. | Limpieza |
-|P5| `precio` | 22 viviendas estan por debajo de 1.000 euros que deberian ser multiplicadas por mil. | Importa porque muestra un valor de precio erroneo por un defasaje en la unidad. | Limpieza |
-|P6| `parking`| Parking tiene "Sí" o "Inlcuido" que deberia ser "Si". Y tiene "No" "<NA>" que es "No". Y una tercera opcion se mantiene que es opcional. | Importa para poder agrupar los datos de forma correcta. | Limpieza |
+| P4 | `ascensor` | Ascensor tiene 13 formas de definir Si (1) o No (0). \['1' 'SI' 'Si' 'Sí' 'True' 'si', 's'\] deberian ser 1. \['0' 'False' 'No' 'no', 'n'\] deberian ser 0 | Importa porque la pregunta si tiene o no ascensor tiene una respuesta binaria que permite filtrar. | Limpieza |
+| P5 | `precio` | 22 viviendas estan por debajo de 1.000 euros que deberian ser multiplicadas por mil. | Importa porque muestra un valor de precio erroneo por un defasaje en la unidad. | Limpieza |
+| P6 | `parking` | Parking tiene "Sí" o "Inlcuido" que deberia ser "Si". Y tiene "No" "" que es "No". Y una tercera opcion se mantiene que es opcional. | Importa para poder agrupar los datos de forma correcta. | Limpieza |
 
 ## 4. Estrategias y experimentos
 
-<!--
-Trabajáis en CUATRO FASES, en este orden. Lo que aceptáis en una fase es el punto de partida
-de la siguiente.
-
-  1. Limpieza: qué filas y qué valores son errores (el precio, la superficie…).
-  2. Transformaciones: pasar las variables a una forma que el modelo entienda
-     (logaritmos, categorías, textos convertidos en números).
-  3. Variables nuevas: crear variables que no están en los datos tal cual (al menos una).
-  4. Modelo: cambiar la regresión lineal por Ridge y AJUSTAR λ (alpha en scikit-learn),
-     probando varios valores (al menos cuatro, por ejemplo de 0,01 a 100).
-
-Cada fila se escribe ANTES DE EJECUTARLA: qué cambia respecto a su referencia (una sola cosa)
-y qué esperáis que pase (la hipótesis). Después, con experimentos.csv, rellenáis el resultado y la conclusión
-(aceptada o descartada, según vuestra regla de decisión).
-
-- Tipo: la fase. limpieza, transformacion, caracteristica o modelo (sin tildes: así aparece en
-  experimentos.csv). CM6 pide al menos una fila de cada fase y cuatro de modelo (cuatro valores de λ).
-- Referencia: el Id de la estrategia con la que se compara. Normalmente, la última aceptada: cuando
-  sepáis cuál es, cambiad "Última aceptada" por su Id, porque el agente necesita uno concreto.
-- MAE medio ± sd: columnas mae_medio y mae_sd de experimentos.csv.
-- Mejora media · particiones: columnas mejora_media (cuánto baja el MAE frente a la referencia, de media;
-  negativa si empeora) y particiones_mejor (en cuántas de las 5 mejora). Por ejemplo, "2.150 € · 5 de 5".
-
-La primera fila de cada fase es un ejemplo para arrancar: podéis quedárosla, cambiarla o borrarla.
--->
-
-**Regla de decisión** (escrita antes de ejecutar nada): <!-- Cuándo aceptáis una estrategia. Por ejemplo: "si baja el MAE de su referencia en al menos 4 de las 5 particiones y en al menos N € de media". ¿Qué hacéis si no se cumple? -->
+**Regla de decisión** (escrita antes de ejecutar nada):
 
 Cómo leemos los resultados: `src.experimentos` da el MAE de cada partición (`mae_p1` … `mae_p5`). Comparamos cada estrategia con su referencia partición a partición, porque hay particiones más difíciles que otras para todas las estrategias a la vez.
 
@@ -78,58 +29,41 @@ Cómo leemos los resultados: `src.experimentos` da el MAE de cada partición (`m
 
 | Id | Tipo | Qué cambia | Referencia | Hipótesis | MAE medio ± sd | Mejora media · particiones | Conclusión |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| E0 | baseline | €/m² mediano de la zona × superficie construida | — | — | | — | La tasación que hay que batir |
-| E1 | minimo | Regresión lineal con `superficie_construida`, `habitaciones`, `banos`, `distancia_centro_km` y `poblacion_zona`, sin transformar | — | _Vuestra hipótesis: ¿mejor o peor que E0? ¿Por qué?_ | | — | |
+| E0 | baseline | €/m² mediano de la zona × superficie construida | — | — |  | — | La tasación que hay que batir |
+| E1 | minimo | Regresión lineal con `superficie_construida`, `habitaciones`, `banos`, `distancia_centro_km` y `poblacion_zona`, sin transformar | — | *Vuestra hipótesis: ¿mejor o peor que E0? ¿Por qué?* |  | — |  |
+|  |  |  |  |  |  |  |  |
 
 ### Fase 1 · Limpieza
 
-<!--
-La limpieza del precio va en limpiar_objetivo() (AGENTS.md §3): decide fila a fila y se aplica antes de
-separar las particiones. No es una estrategia, porque cambia las filas con las que se mide todo: cuando
-la cambiéis, volved a ejecutar E0 y E1 y anotad sus cifras nuevas aquí.
-El resto de la limpieza (por ejemplo, la superficie) sí son estrategias, dentro del Pipeline.
--->
-
 | Id | Tipo | Qué cambia | Referencia | Hipótesis | MAE medio ± sd | Mejora media · particiones | Conclusión |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| L1 | limpieza | Modelo mínimo con la superficie corregida | E1 | Mejora: las superficies de 1.500 m² inflan la tasación | | | |
-| L2 |limpieza  |plantas repetidas | P2|permite definir y unificar mismas plantas | | | |
-| L4 |limpieza  |ascensor | P4| Permite definir Si tiene ascensor o No | | | |
-
+| L1 | limpieza | Modelo mínimo con la superficie corregida | E1 | Mejora: las superficies de 1.500 m² inflan la tasación |  |  |  |
+| L2 | limpieza | plantas repetidas, unifica los valoresa numericos | L1 | permite definir y unificar mismas plantas |  |  |  |
+| L3 | limpieza | ascensor | L2 | Permite definir Si tiene ascensor o No |  |  |  |
 
 ### Fase 2 · Transformaciones
 
 | Id | Tipo | Qué cambia | Referencia | Hipótesis | MAE medio ± sd | Mejora media · particiones | Conclusión |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| T1 | transformacion | Añade la zona como categoría | L1 | Mejora mucho: en Pedralbes el m² vale el triple que en Nou Barris | | | |
-| T2 | transformacion |unifica plantas |L2 |bajos, principal y primeros, bajos. segundos tercero y cuarto, medio. de quinto para arriba, alto.  | | | |
-| T4 |transformacion  |ascensor | P4| ['1' 'SI' 'Si' 'Sí' 'True' 'si', 's'] deberian ser 1.     ['0' 'False' 'No' 'no', 'n'] deberian ser 0  | | | ||
-
+| T1 | transformacion | Añade la zona como categoría | L3 | Mejora mucho: en Pedralbes el m² vale el triple que en Nou Barris |  |  |  |
+| T2 | transformacion | unifica plantas | T1 | bajos, principal y primeros, bajos. segundos tercero y cuarto, medio. de quinto para arriba, alto. |  |  |  |
+| T3 | transformacion | ascensor | T2 | \['1' 'SI' 'Si' 'Sí' 'True' 'si', 's'\] deberian ser 1. \['0' 'False' 'No' 'no', 'n'\] deberian ser 0 |  |  |  |
 
 ### Fase 3 · Variables nuevas
 
 | Id | Tipo | Qué cambia | Referencia | Hipótesis | MAE medio ± sd | Mejora media · particiones | Conclusión |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| N1 | caracteristica | Añade la relación baños / habitaciones | Última aceptada | _Vuestra hipótesis_ | | | |
-| | | | | | | | |
+| N1 | caracteristica | Añade la relación baños / habitaciones | Última aceptada | *Vuestra hipótesis* |  |  |  |
+|  |  |  |  |  |  |  |  |
 
 ### Fase 4 · Modelo
 
-<!--
-Las mismas variables que la última estrategia aceptada en la fase 3; solo cambia el estimador.
-Una fila por valor de λ. Escribid antes cómo elegiréis λ y qué haréis si ningún Ridge mejora a la regresión lineal.
--->
-
 | Id | Tipo | Qué cambia | Referencia | Hipótesis | MAE medio ± sd | Mejora media · particiones | Conclusión |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| M1 | modelo | Ridge con λ = 0,01 | Última aceptada | Igual que la regresión lineal: λ muy pequeño | | | |
-| | | | | | | | |
+| M1 | modelo | Ridge con λ = 0,01 | Última aceptada | Igual que la regresión lineal: λ muy pequeño |  |  |  |
+|  |  |  |  |  |  |  |  |
 
 ## 5. Salidas
-
-<!--
-Las del contrato (AGENTS.md §3) y las que añadáis vosotros (por ejemplo, tablas extra para el cuadro de mando).
--->
 
 | Fichero | Qué contiene | Lo escribe |
 | --- | --- | --- |
@@ -140,12 +74,6 @@ Las del contrato (AGENTS.md §3) y las que añadáis vosotros (por ejemplo, tabl
 | `entregables/envio_kaggle.csv` | Predicción de cada vivienda del test | `src.predecir` |
 
 ## 6. Requisitos
-
-<!--
-Reglas numeradas, cada una verificable y sin ambigüedad. Cada problema de §3 y cada estrategia
-de §4 debería acabar en un requisito que diga exactamente qué se hace.
-Continuad la numeración del ejemplo resuelto (R8, R9…) y escribid los de cada fase antes de empezarla.
--->
 
 **Ejemplo resuelto: datos y validación**
 
@@ -158,49 +86,19 @@ Continuad la numeración del ejemplo resuelto (R8, R9…) y escribid los de cada
 - R7. El envío a Kaggle son las predicciones del modelo guardado para las 4.002 viviendas del test.
 - R8. limpiar_objetivo() elimina únicamente las filas cuya estado_operacion sea retirada. Conserva las filas vendida y todas las columnas, incluida particion. Esta decisión depende exclusivamente de la fila.
 - R9. superficie_construida se corrige dentro del Pipeline de L1: si vale 0 o supera 500 m² y existe una superficie_util positiva, se sustituye por superficie_util; en los demás casos conserva su valor original.
-- R10. Una estrategia de limpieza se acepta si mejora la referencia en al menos 4 de las 5 particiones y baja el MAE medio; si no cumple ambos requisitos, se descarta y la última aceptada sigue siendo E1.
-**Cómo decidimos**
-
-<!-- La regla de decisión de §4, escrita como requisito: con mejora_media y particiones_mejor de experimentos.csv, ¿cuándo se acepta una estrategia? ¿Y si no cambia casi nada? -->
+- R10. Una estrategia de limpieza se acepta si mejora la referencia en al menos 4 de las 5 particiones y baja el MAE medio; si no cumple ambos requisitos, se descarta y la última aceptada sigue siendo E1. **Cómo decidimos**
 
 **Fase 1 · Limpieza**
 
-<!-- Qué hace limpiar_objetivo() con cada fila (qué quita, qué corrige) y cómo se corrigen los demás valores erróneos. -->
-
 **Fase 2 · Transformaciones**
-
-<!-- Para cada variable: cómo se convierte, cómo se rellenan sus vacíos y qué pasa con un valor que no aparece en el entrenamiento. -->
 
 **Fase 3 · Variables nuevas**
 
-<!-- La fórmula de cada variable nueva, con qué hacer si le falta un dato. -->
-
 **Fase 4 · Modelo y explicación**
-
-<!-- Qué valores de λ probáis, cómo elegís el modelo final y qué devuelve explicar() (CM5). -->
 
 **Cuadro de mando**
 
-<!-- Las pantallas de DESIGN.md y qué hace la app si falta algún fichero. -->
-
 ## 7. Criterios de aceptación
-
-<!--
-Cada criterio (CA5, CA6…) dice qué requisito verifica y cómo se comprueba con una cifra o un hecho
-concreto. Cada uno tendrá al menos un test en tests/acceptance/ marcado con
-@pytest.mark.criterio("CA…"). scripts/trazabilidad.py lee los CA de esta sección.
-
-Escribid los criterios de cada fase antes de empezarla: el agente escribe sus tests en una tarea propia,
-vosotros los revisáis y solo después implementa la fase.
-
-Tres tipos útiles:
-- Con un ejemplo pequeño calculado a mano: "CA5 (R9). Con cinco filas inventadas (una vendida normal,
-  una retirada…), limpiar_objetivo deja estas tres: …"
-- Con los datos reales: "CA6 (R10). Tras corregir la superficie, ninguna vivienda tiene 0 m²."
-- Sobre los experimentos: "CA9 (R8). experimentos.csv tiene una fila para cada estrategia de §4."
-
-Lo que no se pueda testear (p. ej. si un gráfico se entiende) indicad cómo se verifica.
--->
 
 **Ejemplo resuelto** (tests en `tests/acceptance/test_ejemplo_resuelto.py`)
 
@@ -216,16 +114,6 @@ Lo que no se pueda testear (p. ej. si un gráfico se entiende) indicad cómo se 
 - Modelos no lineales (árboles, *ensembles*, redes, k vecinos): llegan en las sesiones 14 y 15.
 - Usar el test o sus precios públicos para entrenar o para elegir el modelo.
 
-<!-- Añadid lo que no vais a hacer, para que nadie (ni el agente) lo haga. -->
-
 ## 9. Preguntas abiertas
 
-<!-- Dudas pendientes de decidir. Cuando se decidan, pasan a "Decisiones". -->
-
 ## 10. Decisiones
-
-<!--
-Una línea por decisión: fecha · qué se decide · requisitos afectados · por qué, CON CIFRAS.
-Ejemplo:
-- 2026-12-01 · Aceptamos T1 (la zona como categoría) · R12 · Baja el MAE medio de N € a M € y mejora en 5 de 5 particiones.
--->
