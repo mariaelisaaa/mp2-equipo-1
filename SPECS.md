@@ -93,14 +93,18 @@ El resto de la limpieza (por ejemplo, la superficie) sí son estrategias, dentro
 | Id | Tipo | Qué cambia | Referencia | Hipótesis | MAE medio ± sd | Mejora media · particiones | Conclusión |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | L1 | limpieza | Modelo mínimo con la superficie corregida | E1 | Mejora: las superficies de 1.500 m² inflan la tasación | | | |
-| | | | | | | | |
+| L2 |limpieza  |plantas repetidas | P2|permite definir y unificar mismas plantas | | | |
+| L4 |limpieza  |ascensor | P4| Permite definir Si tiene ascensor o No | | | |
+
 
 ### Fase 2 · Transformaciones
 
 | Id | Tipo | Qué cambia | Referencia | Hipótesis | MAE medio ± sd | Mejora media · particiones | Conclusión |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | T1 | transformacion | Añade la zona como categoría | L1 | Mejora mucho: en Pedralbes el m² vale el triple que en Nou Barris | | | |
-| | | | | | | | |
+| T2 | transformacion |unifica plantas |L2 |bajos, principal y primeros, bajos. segundos tercero y cuarto, medio. de quinto para arriba, alto.  | | | |
+| T4 |transformacion  |ascensor | P4| ['1' 'SI' 'Si' 'Sí' 'True' 'si', 's'] deberian ser 1.     ['0' 'False' 'No' 'no', 'n'] deberian ser 0  | | | ||
+
 
 ### Fase 3 · Variables nuevas
 
