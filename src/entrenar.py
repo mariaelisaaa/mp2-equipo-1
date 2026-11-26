@@ -22,7 +22,7 @@ from src.validacion import intervalo_bootstrap, mae, rmse
 
 
 def resumir(y_real: pd.Series, y_pred) -> dict:
-    """MAE y RMSE con su intervalo de confianza del 95 % por bootstrap (R6)."""
+    """MAE y RMSE con su intervalo de confianza del 95 % por bootstrap (R4)."""
     return {"mae": intervalo_bootstrap(y_real, y_pred, mae),
             "rmse": intervalo_bootstrap(y_real, y_pred, rmse)}
 

@@ -38,7 +38,7 @@ uv run python -m src.experimentos           # compara las estrategias → report
 uv run python -m src.entrenar               # modelo final → models/ y reports/metricas.json
 uv run python -m src.predecir               # envío a Kaggle → entregables/envio_kaggle.csv
 uv run pytest                               # tests
-uv run python scripts/trazabilidad.py       # ¿cada criterio tiene su test?
+uv run python scripts/trazabilidad.py       # ¿cada criterio tiene su test y cada estrategia de SPECS.md está en el código?
 uv run streamlit run src/app.py             # cuadro de mando
 ```
 

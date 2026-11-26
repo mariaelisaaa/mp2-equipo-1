@@ -6,13 +6,16 @@ import numpy as np
 import pandas as pd
 import pytest
 from sklearn.compose import TransformedTargetRegressor
-from sklearn.linear_model import ElasticNet, ElasticNetCV, Lasso, LassoCV, LinearRegression, Ridge, RidgeCV
+from sklearn.linear_model import ElasticNet, Lasso, LinearRegression, Ridge
 from sklearn.pipeline import Pipeline
 
 from src.datos import PARTICIONES_CV, VALIDACION, limpiar_objetivo, separar
 from src.validacion import mae
 
-LINEALES = (LinearRegression, Ridge, RidgeCV, Lasso, LassoCV, ElasticNet, ElasticNetCV)
+# Sin las versiones …CV: λ se elige con las cinco particiones fijas (fase 4 de SPECS.md), no dentro del modelo
+LINEALES = (LinearRegression, Ridge, Lasso, ElasticNet)
+# Tipos de experimentos.csv: el punto de partida y las cuatro fases de SPECS.md §4, con su mínimo de filas
+MINIMOS_POR_TIPO = {"baseline": 1, "minimo": 1, "limpieza": 1, "transformacion": 1, "caracteristica": 1, "modelo": 4}
 
 
 def _limpios(entrenamiento: pd.DataFrame) -> pd.DataFrame:
@@ -83,7 +86,8 @@ def _partes(modelo):
 @pytest.mark.criterio("CM5")
 def test_lineal_y_explicable(modelo, entrenamiento):
     preparacion, estimador = _partes(modelo)
-    assert isinstance(estimador, LINEALES), f"El estimador final es {type(estimador).__name__}, no un modelo lineal"
+    assert isinstance(estimador, LINEALES), \
+        f"El estimador final es {type(estimador).__name__}: tiene que ser LinearRegression, Ridge, Lasso o ElasticNet"
     try:
         from src.explicar import explicar
     except ModuleNotFoundError:
@@ -92,24 +96,40 @@ def test_lineal_y_explicable(modelo, entrenamiento):
     contribuciones = explicar(modelo, X_val)
     assert isinstance(contribuciones, pd.DataFrame) and "intercepto" in contribuciones.columns
     assert len(contribuciones) == len(X_val)
-    esperado = estimador.predict(preparacion.transform(X_val))
+    transformadas = preparacion.transform(X_val)
+    assert contribuciones.shape[1] == transformadas.shape[1] + 1, \
+        "explicar() debe devolver el intercepto y una columna por cada columna que entra en el estimador lineal"
+    esperado = estimador.predict(transformadas)
     np.testing.assert_allclose(contribuciones.sum(axis=1).to_numpy(), esperado, rtol=1e-6, atol=1e-6,
                                err_msg="El intercepto más las contribuciones no da la predicción del modelo")
 
 
 @pytest.mark.criterio("CM6")
 def test_experimentos(experimentos):
-    columnas = {"estrategia", "tipo", "descripcion", "mae_medio", "mae_sd"} | {f"mae_p{p}" for p in PARTICIONES_CV}
+    mae_particiones = [f"mae_p{p}" for p in PARTICIONES_CV]
+    columnas = {"estrategia", "tipo", "descripcion", "referencia", "mae_medio", "mae_sd",
+                "mejora_media", "particiones_mejor"} | set(mae_particiones)
     faltan = columnas - set(experimentos.columns)
     assert not faltan, f"Faltan columnas en experimentos.csv: {sorted(faltan)}"
     assert experimentos["estrategia"].is_unique
-    minimos = {"baseline": 1, "minimo": 1, "estrategia": 3, "caracteristica": 1}
+    otros = sorted(set(experimentos["tipo"]) - set(MINIMOS_POR_TIPO))
+    assert not otros, f"Tipos que no existen: {otros}. Los tipos son {list(MINIMOS_POR_TIPO)}"
     cuenta = experimentos["tipo"].value_counts()
-    for tipo, n in minimos.items():
+    for tipo, n in MINIMOS_POR_TIPO.items():
         assert cuenta.get(tipo, 0) >= n, f"Hacen falta al menos {n} fila(s) de tipo '{tipo}' y hay {cuenta.get(tipo, 0)}"
-    particiones = experimentos[[f"mae_p{p}" for p in PARTICIONES_CV]]
+    particiones = experimentos[mae_particiones]
     assert (particiones > 0).all().all()
     assert np.allclose(particiones.mean(axis=1), experimentos["mae_medio"]), "mae_medio no es la media de las particiones"
+    por_nombre = experimentos.set_index("estrategia")
+    con_referencia = experimentos[experimentos["referencia"].fillna("").astype(str) != ""]
+    for _, fila in con_referencia.iterrows():
+        assert fila["referencia"] in por_nombre.index, \
+            f"{fila['estrategia']}: su referencia {fila['referencia']!r} no está en experimentos.csv"
+        diferencia = por_nombre.loc[fila["referencia"], mae_particiones].to_numpy(dtype=float) \
+            - fila[mae_particiones].to_numpy(dtype=float)
+        assert fila["mejora_media"] == pytest.approx(diferencia.mean()), f"{fila['estrategia']}: mejora_media mal calculada"
+        assert int(fila["particiones_mejor"]) == int((diferencia > 0).sum()), \
+            f"{fila['estrategia']}: particiones_mejor mal calculado"
 
 
 @pytest.mark.criterio("CM7")

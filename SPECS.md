@@ -152,7 +152,9 @@ Continuad la numeración del ejemplo resuelto (R8, R9…) y escribid los de cada
 - R5. Modelo mínimo: regresión lineal con `superficie_construida`, `habitaciones`, `banos`, `distancia_centro_km` y `poblacion_zona`, sin transformar. Es la referencia de las estrategias.
 - R6. El modelo final se entrena con las particiones 1-5 y se mide una vez en `validacion`, junto al baseline entrenado con las mismas filas.
 - R7. El envío a Kaggle son las predicciones del modelo guardado para las 4.002 viviendas del test.
-
+- R8. limpiar_objetivo() elimina únicamente las filas cuya estado_operacion sea retirada. Conserva las filas vendida y todas las columnas, incluida particion. Esta decisión depende exclusivamente de la fila.
+- R9. superficie_construida se corrige dentro del Pipeline de L1: si vale 0 o supera 500 m² y existe una superficie_util positiva, se sustituye por superficie_util; en los demás casos conserva su valor original.
+- R10. Una estrategia de limpieza se acepta si mejora la referencia en al menos 4 de las 5 particiones y baja el MAE medio; si no cumple ambos requisitos, se descarta y la última aceptada sigue siendo E1.
 **Cómo decidimos**
 
 <!-- La regla de decisión de §4, escrita como requisito: con mejora_media y particiones_mejor de experimentos.csv, ¿cuándo se acepta una estrategia? ¿Y si no cambia casi nada? -->

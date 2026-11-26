@@ -26,7 +26,7 @@ Si falta algo para hacer la tarea, **no lo supongas**: pregunta.
 | Entrenar el modelo final | `uv run python -m src.entrenar` |
 | Hacer el envío a Kaggle | `uv run python -m src.predecir` |
 | Ejecutar los tests | `uv run pytest` |
-| Ver si cada criterio tiene su test | `uv run python scripts/trazabilidad.py` |
+| Ver si cada criterio tiene su test y cada estrategia de `SPECS.md` está en el código | `uv run python scripts/trazabilidad.py` |
 | Abrir el cuadro de mando | `uv run streamlit run src/app.py` |
 
 ## 3. Reglas del profesorado (no se cambian)
@@ -36,7 +36,7 @@ Si falta algo para hacer la tarea, **no lo supongas**: pregunta.
 | Dónde | Qué |
 | --- | --- |
 | `src/datos.py` | `cargar_entrenamiento()`, `cargar_test()`, `separar(datos)` y `limpiar_objetivo(datos)` |
-| `src/estrategias.py` | La lista `ESTRATEGIAS`, la constante `MODELO_FINAL` y la función `crear_modelo_final()` |
+| `src/estrategias.py` | La lista `ESTRATEGIAS`, la constante `MODELO_FINAL` y la función `crear_modelo_final()`. Cada `Estrategia` lleva su tipo y su referencia (ver más abajo) |
 | `src/explicar.py` | `explicar(modelo, X)`, que devuelve una tabla (ver CM5) |
 | `src.experimentos` | Escribe `reports/experimentos.csv` |
 | `src.entrenar` | Escribe `models/modelo.joblib`, `reports/metricas.json` y `reports/predicciones_validacion.csv` |
@@ -45,11 +45,19 @@ Si falta algo para hacer la tarea, **no lo supongas**: pregunta.
 **Cómo es el modelo:**
 
 - Es un `Pipeline` de scikit-learn con **toda la preparación dentro**: `modelo.predict()` recibe las filas tal como vienen en `test_set.csv`.
-- El último paso es lineal: `LinearRegression`, `Ridge`, `Lasso` o `ElasticNet`. Para predecir el logaritmo del precio se usa `TransformedTargetRegressor`.
+- El último paso es lineal: `LinearRegression`, `Ridge`, `Lasso` o `ElasticNet`, **sin** sus versiones `…CV`: λ se elige con las cinco particiones, en la fase 4 de `SPECS.md`. Para predecir el logaritmo del precio se usa `TransformedTargetRegressor`.
 - `limpiar_objetivo()` se aplica primero. Después se entrena con las particiones 1-5 y se mide **una sola vez** en `validacion`. Nunca se usa `validacion` para comparar estrategias ni para elegir λ.
 - `limpiar_objetivo()` decide cada fila mirando **solo esa fila** (por ejemplo, quitarla si es un anuncio retirado). No puede usar medias, medianas ni nada calculado con otras filas.
 - Solo se usan variables que el banco conoce **antes de la venta**.
 - El test solo se usa para hacer el envío.
+
+**Cada estrategia de `ESTRATEGIAS`** es una fila de `SPECS.md` §4:
+
+- `nombre`: su Id en minúsculas, con una palabra que la describa (`l1_superficie_corregida`, `t1_zona`). E0 es `baseline` y E1 es `modelo_minimo`: en `SPECS.md`, «E1» como referencia quiere decir `modelo_minimo`.
+- `tipo`: su fase. Es uno de `limpieza`, `transformacion`, `caracteristica` o `modelo` (`baseline` y `minimo` son el punto de partida).
+- `referencia`: el `nombre` de la estrategia con la que se compara, que tiene que estar antes en la lista. Si en `SPECS.md` pone «Última aceptada», pregunta cuál es.
+
+`src.experimentos` calcula ya la mejora frente a la referencia (`mejora_media`, positiva si mejora) y en cuántas particiones mejora (`particiones_mejor`).
 
 **Tests del profesorado** (`tests/acceptance/test_contrato_modelo.py`):
 
@@ -57,11 +65,11 @@ Si falta algo para hacer la tarea, **no lo supongas**: pregunta.
 | --- | --- |
 | CM1 | El modelo tasa todas las viviendas del test sin errores, sin vacíos y con precios positivos |
 | CM2 | `envio_kaggle.csv` tiene las columnas `index` y `precio` y una fila por vivienda del test |
-| CM3 | `metricas.json` tiene el MAE y el RMSE del baseline y del modelo en `validacion`, cada uno con su intervalo de confianza del 95 % |
-| CM4 | Entrenar el modelo final dos veces da las mismas tasaciones |
-| CM5 | El último paso es lineal y `explicar()` devuelve una columna `intercepto` y una por cada columna del modelo; sumadas, dan la predicción (en logaritmo, si se predice el logaritmo) |
-| CM6 | `experimentos.csv` tiene al menos 1 `baseline`, 1 `minimo`, 3 `estrategia` y 1 `caracteristica`, con el MAE de cada partición, la media y la desviación |
-| CM7 | `limpiar_objetivo()` decide fila a fila: limpiar una parte de los datos da lo mismo que limpiarlo todo y quedarse con esa parte |
+| CM3 | `metricas.json` tiene el MAE y el RMSE del baseline y del modelo en `validacion` (después de `limpiar_objetivo`), cada uno con su intervalo de confianza del 95 %, y son los del modelo guardado |
+| CM4 | Entrenar el modelo final dos veces da las mismas tasaciones, y son las del modelo guardado (el de `MODELO_FINAL`) |
+| CM5 | El último paso es lineal (sin versiones `…CV`) y `explicar()` devuelve una columna `intercepto` y una por cada columna que entra en el estimador; sumadas, dan la predicción (en logaritmo, si se predice el logaritmo) |
+| CM6 | `experimentos.csv` tiene el MAE de cada partición, la media, la desviación y la comparación con la referencia, y al menos 1 fila de `baseline`, `minimo`, `limpieza`, `transformacion` y `caracteristica`, y 4 de `modelo` (cuatro valores de λ) |
+| CM7 | `limpiar_objetivo()` decide fila a fila: limpiar una parte de los datos da lo mismo que limpiarlo todo y quedarse con esa parte. No añade filas y conserva la columna `particion` |
 
 ## 4. Cómo trabajas
 
@@ -70,10 +78,11 @@ Si falta algo para hacer la tarea, **no lo supongas**: pregunta.
 1. **Una tarea cada vez.** Antes de escribir código, di qué vas a hacer, qué requisitos (`R…`) y criterios (`CA…`) cubre y qué ficheros vas a tocar.
 2. **Haz solo lo que pide la tarea**, siguiendo `ARCHITECTURE.md` y `DESIGN.md`.
 3. **Comprueba:**
-   - Ejecuta los tests de la tarea.
+   - Ejecuta los tests de la tarea y después `uv run pytest` entero. Di qué falla. Mientras no estén hechas las fases que los arreglan, es normal que fallen CM1 (hasta que se predice el logaritmo del precio), CM6 (hasta tener filas de las cuatro fases) y CM5 (hasta `explicar()`). Cualquier otro test que falle por tu tarea es un fallo de la tarea.
    - Si has añadido una estrategia, ejecuta `uv run python -m src.experimentos` y **copia en tu respuesta** su fila de `experimentos.csv` y la de su referencia. No decidas tú si se acepta: lo decide el equipo con la regla de `SPECS.md`.
+   - Si has cambiado `limpiar_objetivo()`, cambian las filas con las que se mide todo: ejecuta `src.experimentos`, `src.entrenar` y `src.predecir`, y da las cifras nuevas de E0 y E1.
    - Si has cambiado el modelo final, ejecuta `src.entrenar` y `src.predecir`.
-4. **Actualiza `TASKS.md`:** marca la tarea con `[x]` si pasan sus tests y añade una línea `Agente:` con qué hiciste y cómo lo comprobaste. La línea `Verificado por:` la escribe una persona.
+4. **Actualiza `TASKS.md`:** marca la tarea con `[x]` si pasan sus tests y añade una línea `Agente:` con qué hiciste y cómo lo comprobaste. En una tarea de tests, los tests nuevos fallan hasta la tarea que implementa lo que comprueban: la marcas si se ejecutan sin errores y fallan por lo que tienen que fallar, y lo dices. La línea `Verificado por:` la escribe una persona.
 5. **Para** y espera a que te pidan la siguiente tarea.
 
 **Tests de aceptación.** En las tareas de tests, escribes en `tests/acceptance/` los tests de los criterios `CA…` de `SPECS.md`, con los ejemplos tal como están escritos. Los marcas con `@pytest.mark.criterio("CA…")`. Una persona del equipo los valida (¿el ejemplo es el de `SPECS.md`?, ¿el resultado esperado está calculado a mano?) y lo anota en `Verificado por:` antes de que implementes la tarea siguiente. Después ya no los cambias.
@@ -114,6 +123,7 @@ Si falta algo para hacer la tarea, **no lo supongas**: pregunta.
 ## 9. Una tarea está terminada cuando
 
 - Hace lo que dicen `SPECS.md`, `DESIGN.md` y `ARCHITECTURE.md`.
-- Pasan sus tests.
+- Pasan sus tests (en una tarea de tests: se ejecutan y fallan solo por lo que falta implementar).
+- `uv run pytest` no tiene fallos nuevos por culpa de la tarea.
 - `TASKS.md` tiene la línea `Agente:`.
 - No se ha tocado nada fuera de la tarea.

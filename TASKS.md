@@ -29,6 +29,12 @@ Pistas:
 
 ## Fase 1 · Limpieza (sesión 12)
 
+- [ ] 1. Escribir y revisar los tests de aceptación de la fase 1 (R8-R10)
+- [ ] 2. Implementar `limpiar_objetivo()` para eliminar las filas retiradas (R8)
+- [ ] 3. Implementar la corrección de `superficie_construida` dentro del Pipeline de L1 (R9)
+- [ ] 4. Añadir y comparar la estrategia L1 frente a E1 en `experimentos.csv` (R10)
+- [ ] 5. Actualizar la fase 1 de `SPECS.md` con las cifras y la conclusión de L1
+
 ## Fase 2 · Transformaciones (sesión 12)
 
 ## Fase 3 · Variables nuevas (entre sesiones)
